@@ -1,0 +1,156 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>random number</title>
+
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <script
+			  src="http://code.jquery.com/jquery-2.2.4.min.js"
+			  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+			  crossorigin="anonymous"></script>
+    <script src="web3.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>random number</h1>
+        
+        <h2 id="account"> </h2>
+
+        <label>sender address:</label>
+        <input type="text" id="fromAccount" value="">
+
+        <label>seed:</label>
+        <input type="text" id="randnum" value="">
+
+        <div>
+            <span style="float: left;">
+                <button id="go_generate"">go</button>
+            </span>
+            <span style="float: right;">
+                <button id="cancel_generate"">stop</button>
+            </span>
+        </div>
+        
+        <label>numbers:</label>
+        <input type="text" id="lotterynum">
+        
+
+    </div>
+
+    </div>
+
+    
+    <script>
+    $(document).ready(function(){
+        window.addEventListener('load', function () {
+            if (window.ethereum) {
+                window.web3 = new Web3(ethereum);
+                try {
+                    ethereum.enable();
+                    web3.eth.sendTransaction({/* ... */ });
+                } catch (error) {
+                }
+            }
+            else if (window.web3) {
+                window.web3 = new Web3(web3.currentProvider);
+            }
+            else {
+                console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+            }
+        });
+
+        web3.eth.getAccounts(function (err, accounts) {
+            if (accounts.length == 0) {
+                $("#account").html("请检查钱包是否解锁");
+            } else {
+                $("#account").html("");
+                $("#fromAccount").val(web3.eth.defaultAccount);
+            }
+            console.log(web3.eth.defaultAccount);
+        });
+
+
+        var contractAddress = '0xa3fa669dbf4e35361f3a7f85f368fb2a718ca67f';
+        var contractAbi = [{"constant":true,"inputs":[{"name":"num","type":"uint256"}],"name":"hashNumber","outputs":[{"name":"","type":"uint256[7]"}],"payable":false,"stateMutability":"view","type":"function"}];
+
+        $("#go_generate").click(function(){
+            var number = parseInt($("#randnum").val());
+            timer = true;
+            DoGenerateNum(number);
+        });
+
+        $("#cancel_generate").click(function(){
+            timer = false;
+        })
+
+        var timer = false;
+
+        function DoGenerateNum(number){
+            setTimeout(function(){
+                if(number == ''){
+                    number = 1000;
+                }
+
+                var contractInstance = web3.eth.contract(contractAbi).at(contractAddress);
+                contractInstance.hashNumber(number, {from: web3.eth.defaultAccount}, function(err, result_call){
+                    if(!err){
+                        // console.log(result_call);
+                        var num0 = result_call[0].c[0];
+                        var num1 = result_call[1].c[0];
+                        var num2 = result_call[2].c[0];
+                        var num3 = result_call[3].c[0];
+                        var num4 = result_call[4].c[0];
+                        var num5 = result_call[5].c[0];
+                        var num6 = result_call[6].c[0];
+                        var pstr = num0+','+num1+','+num2+','+num3+','+num4+','+num5+','+num6+',';
+                        console.log(pstr);
+                        $("#lotterynum").val(pstr);
+                        addNumber(num0, num1, num2, num3, num4, num5, num6, function(resadd){
+                            nextNum(number);
+                        })
+                    }else{
+                        console.log('call hashNumber error');
+                        console.log(err);
+                        nextNum(number);
+                    }
+                })
+                
+            }, 10);
+        }
+
+        function addNumber(num0, num1, num2, num3, num4, num5, num6, callback){
+            $.ajax({
+                type: "POST",
+                url: "http://localhost:8089/add-number",
+                data: {
+                    num0: num0,
+                    num1: num1,
+                    num2: num2,
+                    num3: num3,
+                    num4: num4,
+                    num5: num5,
+                    num6: num6
+                },
+                dataType: "json",
+                success: function(res){
+                    callback(1);
+                },
+                error: function(err){
+                    callback(0);
+                }
+            });
+        }
+        function nextNum(number){
+            if(timer == true){
+                var numberNext = number + 1;
+                $("#randnum").val(numberNext);
+                DoGenerateNum(numberNext);
+            }
+        }
+    });
+    </script>
+</body>
+
+</html>
